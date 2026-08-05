@@ -150,3 +150,95 @@ def update_status(ticket_id, new_status):
                 WHERE ticket_id = ?
             """, [new_status, int(ticket_id)])
     return f"✅ Ticket {int(ticket_id)} status updated to '{new_status}'."
+    # ----------------------------------------------------------
+# Gradio UI
+# ----------------------------------------------------------
+STATUSES   = ["open", "in_progress", "resolved"]
+PRIORITIES = ["low", "medium", "high", "critical"]
+CATEGORIES = ["general", "bug", "feature", "billing", "security"]
+
+with gr.Blocks(title="Support Ticket System") as demo:
+
+    gr.Markdown("# 🎫 Support Ticket System")
+
+    # ── Tab 1: View All Tickets ──────────────────────────
+    with gr.Tab("📋 All Tickets"):
+        with gr.Row():
+            status_filter = gr.Dropdown(
+                choices=["All"] + STATUSES,
+                value="All",
+                label="Filter by Status",
+                scale=1,
+            )
+            refresh_btn = gr.Button("🔄 Refresh", variant="primary", scale=1)
+
+        tickets_table = gr.Dataframe(
+            headers=["ID", "Title", "Status", "Priority", "Category", "Created By", "Created At"],
+            interactive=False,
+            wrap=True,
+        )
+        refresh_btn.click(fn=fetch_tickets, inputs=status_filter, outputs=tickets_table)
+        status_filter.change(fn=fetch_tickets, inputs=status_filter, outputs=tickets_table)
+
+    # ── Tab 2: View Messages ─────────────────────────────
+    with gr.Tab("💬 View Messages"):
+        gr.Markdown("Enter a Ticket ID from the All Tickets tab.")
+        msg_ticket_id = gr.Number(label="Ticket ID", precision=0, minimum=1)
+        view_btn      = gr.Button("Load Messages", variant="primary")
+        msg_status    = gr.Textbox(label="Status", interactive=False)
+        messages_out  = gr.Dataframe(
+            headers=["Author", "Message", "Sent At"],
+            interactive=False,
+            wrap=True,
+        )
+        view_btn.click(
+            fn=fetch_messages,
+            inputs=msg_ticket_id,
+            outputs=[messages_out, msg_status],
+        )
+
+    # ── Tab 3: Create Ticket ─────────────────────────────
+    with gr.Tab("➕ Create Ticket"):
+        new_title    = gr.Textbox(label="Title *", placeholder="Brief description of the issue")
+        with gr.Row():
+            new_author   = gr.Textbox(label="Your Email *", placeholder="you@example.com", scale=2)
+            new_priority = gr.Dropdown(choices=PRIORITIES, value="medium", label="Priority", scale=1)
+            new_category = gr.Dropdown(choices=CATEGORIES, value="general", label="Category", scale=1)
+        create_btn = gr.Button("Create Ticket", variant="primary")
+        create_out = gr.Textbox(label="Result", interactive=False)
+        gr.Markdown("_* Required fields_")
+        create_btn.click(
+            fn=create_ticket,
+            inputs=[new_title, new_author, new_priority, new_category],
+            outputs=create_out,
+        )
+
+    # ── Tab 4: Add Message ───────────────────────────────
+    with gr.Tab("✉️ Add Message"):
+        with gr.Row():
+            am_ticket_id = gr.Number(label="Ticket ID *", precision=0, minimum=1, scale=1)
+            am_author    = gr.Textbox(label="Your Email *", placeholder="you@example.com", scale=2)
+        am_message = gr.Textbox(label="Message *", lines=4, placeholder="Type your message...")
+        am_btn     = gr.Button("Send Message", variant="primary")
+        am_out     = gr.Textbox(label="Result", interactive=False)
+        gr.Markdown("_* Required fields_")
+        am_btn.click(
+            fn=add_message,
+            inputs=[am_ticket_id, am_author, am_message],
+            outputs=am_out,
+        )
+
+    # ── Tab 5: Update Status ─────────────────────────────
+    with gr.Tab("🔄 Update Status"):
+        with gr.Row():
+            us_ticket_id = gr.Number(label="Ticket ID", precision=0, minimum=1, scale=1)
+            us_status    = gr.Dropdown(choices=STATUSES, label="New Status", scale=1)
+        us_btn = gr.Button("Update Status", variant="primary")
+        us_out = gr.Textbox(label="Result", interactive=False)
+        us_btn.click(
+            fn=update_status,
+            inputs=[us_ticket_id, us_status],
+            outputs=us_out,
+        )
+
+demo.launch()
