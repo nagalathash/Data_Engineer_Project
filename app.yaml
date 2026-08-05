@@ -1,1 +1,11 @@
+@@ -0,0 +1,10 @@
+yaml
+command: ["python", "app.py"]
 
+env:
+  - name: DATABRICKS_HOST
+    valueFrom: "{{secrets/your-scope/host}}"
+  - name: DATABRICKS_HTTP_PATH
+    valueFrom: "{{secrets/your-scope/http_path}}"
+  - name: DATABRICKS_TOKEN
+    valueFrom: "{{secrets/your-scope/token}}"
